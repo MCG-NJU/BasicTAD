@@ -1,0 +1,155 @@
+import torch
+
+from vedacore.misc import registry
+from vedatad.bridge import build_converter, build_meshgrid
+from vedatad.misc.segment import multiclass_nms, segment2result
+from .base_engine import BaseEngine
+
+CLASSES = ('BaseballPitch', 'BasketballDunk', 'Billiards', 'CleanAndJerk',
+           'CliffDiving', 'CricketBowling', 'CricketShot', 'Diving',
+           'FrisbeeCatch', 'GolfSwing', 'HammerThrow', 'HighJump',
+           'JavelinThrow', 'LongJump', 'PoleVault', 'Shotput',
+           'SoccerPenalty', 'TennisSwing', 'ThrowDiscus',
+           'VolleyballSpiking')
+
+
+@registry.register_module('engine')
+class InferEngine(BaseEngine):
+
+    def __init__(self, model, meshgrid, converter, num_classes, use_sigmoid,
+                 test_cfg):
+        super().__init__(model)
+        self.meshgrid = build_meshgrid(meshgrid)
+        self.converter = build_converter(converter)
+        if use_sigmoid:
+            self.cls_out_channels = num_classes
+        else:
+            self.cls_out_channels = num_classes + 1
+        self.test_cfg = test_cfg
+
+    def extract_feats(self, img):
+        feats = self.model(img, train=False)
+        return feats
+
+    def _get_raw_dets(self, imgs, video_metas):
+        """
+        Args:
+            imgs (torch.Tensor): shape N*3*T*H*W, N is batch size
+            video_metas (list): len(video_metas) = N
+        Returns:
+            dets(list): len(dets) is the batch size, len(dets[ii]) = #classes,
+                dets[ii][jj] is an np.array whose shape is N*3
+        """
+        feats = self.extract_feats(imgs)
+
+        featmap_tsizes = [feat.shape[2] for feat in feats[0]]
+        dtype = feats[0][0].dtype
+        device = feats[0][0].device
+        anchor_mesh = self.meshgrid.gen_anchor_mesh(featmap_tsizes,
+                                                    video_metas, dtype, device)
+        # segments, scores, score_factor
+        dets = self.converter.get_segments(anchor_mesh, video_metas, *feats)
+
+        return dets
+
+    def _simple_infer(self, imgs, video_metas):
+        """
+        Args:
+            imgs (torch.Tensor): shape N*3*T*H*W, N is batch size
+            video_metas (list): len(video_metas) = N
+        Returns:
+            dets(list): len(dets) is the batch size, len(dets[ii]) = #classes,
+                dets[ii][jj] is an np.array whose shape is N*3
+        """
+        dets = self._get_raw_dets(imgs, video_metas)
+        batch_size = len(dets)
+        nclasses = len(dets[0])
+
+        fps = video_metas[0]["fps"]
+        num_frames = video_metas[0]["ori_tsize"]
+        video_name = video_metas[0]["ori_video_name"]
+
+        proposal_list = []
+        for ii in range(batch_size):
+            segments, scores, centerness = dets[ii]
+            det_segments, det_labels = multiclass_nms(
+                segments,
+                scores,
+                self.test_cfg.score_thr,
+                self.test_cfg.nms,
+                self.test_cfg.max_per_video,
+                score_factors=centerness)
+            segment_result = segment2result(det_segments, det_labels,
+                                            self.cls_out_channels)
+            for i in range(len(segment_result)):
+                for act in segment_result[i]:
+                    tmp_proposal = {}
+                    tmp_proposal["label"] = CLASSES[i]
+                    tmp_proposal["score"] = float(act[2])
+                    tmp_proposal["segment"] = [float(round(max(0, float(act[0])) / fps, 1)),
+                                               float(round(min(num_frames, float(act[1])) / fps, 1))]
+                    proposal_list.append(tmp_proposal)
+
+        return {video_name: proposal_list}
+
+    def _aug_infer(self, imgs_list, video_metas_list):
+        assert len(imgs_list) == len(video_metas_list)
+
+        dets = []
+        ntransforms = len(imgs_list)
+        for idx in range(len(imgs_list)):
+            imgs = imgs_list[idx]
+            video_metas = video_metas_list[idx]
+            tdets = self._get_raw_dets(imgs, video_metas)
+            dets.append(tdets)
+        batch_size = len(dets[0])
+        nclasses = len(dets[0][0])
+
+        merged_dets = []
+        for ii in range(batch_size):
+            single_video = []
+            for kk in range(nclasses):
+                single_class = []
+                for jj in range(ntransforms):
+                    single_class.append(dets[jj][ii][kk])
+                single_video.append(torch.cat(single_class, axis=0))
+            merged_dets.append(single_video)
+
+        fps = video_metas_list[0][0]["fps"]
+        num_frames = video_metas_list[0][0]["ori_tsize"]
+        video_name = video_metas_list[0][0]["ori_video_name"]
+        proposal_list = []
+        for ii in range(batch_size):
+            segments, scores, centerness = merged_dets[ii]
+            if self.test_cfg.nms.get("typename") == "nms":
+                segments = segments.cpu()
+                scores = scores.cpu()
+                centerness = centerness.cpu()
+
+            det_segments, det_labels = multiclass_nms(
+                segments,
+                scores,
+                self.test_cfg.score_thr,
+                self.test_cfg.nms,
+                self.test_cfg.max_per_video,
+                score_factors=centerness)
+            segment_result = segment2result(det_segments, det_labels,
+                                            self.cls_out_channels)
+
+            for i in range(len(segment_result)):
+                for act in segment_result[i]:
+                    tmp_proposal = {}
+                    tmp_proposal["label"] = CLASSES[i]
+                    tmp_proposal["score"] = float(act[2])
+                    tmp_proposal["segment"] = [float(round(max(0, float(act[0])) / fps, 1)),
+                                               float(round(min(num_frames, float(act[1])) / fps, 1))]
+                    proposal_list.append(tmp_proposal)
+
+        return {video_name: proposal_list}
+
+    def infer(self, imgs, video_metas):
+
+        if len(imgs) == 1:
+            return self._simple_infer(imgs[0], video_metas[0])
+        else:
+            return self._aug_infer(imgs, video_metas)

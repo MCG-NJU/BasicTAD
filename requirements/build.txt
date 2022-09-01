@@ -1,0 +1,8 @@
+cython
+numpy
+joblib
+pandas
+matplotlib
+psutil
+tensorboard
+fvcore
