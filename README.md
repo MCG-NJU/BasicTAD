@@ -3,7 +3,7 @@
 Our paper is available in [BasicTAD](https://arxiv.org/abs/2205.02717) 
 
 # News
-[2022.9.1] We update README.md, and we will release codes, checkpoint on THUMOS14 soon.
+[2022.9.1] We update README.md, and release codes, checkpoint on THUMOS14.
 
 ![alt](basictad.png)
 
