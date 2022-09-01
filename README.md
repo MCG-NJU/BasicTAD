@@ -66,9 +66,9 @@ bash tools/thumos/train_and_test_thumos_anchor_free_3fps.sh
 #anchor-free-6fps
 bash tools/thumos/train_and_test_thumos_anchor_free_6fps.sh
 #anchor-based-3fps
-bash tools/thumos/train_and_test_thumos_anchor_based_3fps_sp.sh
+bash tools/thumos/train_and_test_thumos_anchor_based_3fps.sh
 #anchor-based-6fps
-bash tools/thumos/train_and_test_thumos_anchor_based_6fps_sp.sh
+bash tools/thumos/train_and_test_thumos_anchor_based_6fps.sh
 ```
 # Checkpoint
 |Method|mAP@0.3|mAP@0.4|mAP@0.5|mAP@0.6|mAP@0.7|Avg|checkpoint|
