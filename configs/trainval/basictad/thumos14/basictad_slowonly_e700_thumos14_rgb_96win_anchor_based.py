@@ -4,8 +4,8 @@ data_root = './data/thumos14/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 num_frames=96
-img_shape = (128,128)
-img_shape_test = (112,112)
+img_shape = (112,112)
+img_shape_test = (128,128)
 overlap_ratio = 0.25
 
 data = dict(
