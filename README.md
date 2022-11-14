@@ -82,14 +82,13 @@ bash tools/thumos/train_and_test_thumos_anchor_based_6fps.sh
 |anchor_free_6fps|75.1|70.2|63.0|50.6|38.7|59.5|[link](https://pan.baidu.com/s/1Q52A9O1cHKM9Cp8cbX2hdQ)(key:kkn3)
 
 # How to use Checkpoints above
-'''
+```
 cd ${basictad_root}
 # anchor_based_6fps
 CUDA_VISIBLE_DEVICES=0 python tools/thumos/test_ab.py configs/trainval/basictad/thumos14/basictad_slowonly_e700_thumos14_rgb_192win_anchor_based.py anchor_based-6fps/epoch_300_epoch.pth
 # anchor_free_6fps
 CUDA_VISIBLE_DEVICES=0 python tools/thumos/test_af.py --framerate 6 configs/trainval/basictad/thumos14/basictad_slowonly_e700_thumos14_rgb_192win_anchor_free.py anchor_free-6fps/epoch_600_epoch.pth
-'''
-
+```
 # Credits
 We especially thank the contributors of the [DaoTAD](https://github.com/Media-Smart/vedatad) for providing helpful code.
 
