@@ -3,6 +3,7 @@
 Our paper is available in [BasicTAD](https://arxiv.org/abs/2205.02717) 
 
 # News
+[2022.11.14] We upload pretrained backbone for users to train their own models. 
 [2022.11.2] Some issues have been fixed. More complete code is on the way.
 [2022.9.1] We update README.md, and release codes, checkpoint on THUMOS14.
 
