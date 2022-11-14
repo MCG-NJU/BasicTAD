@@ -59,6 +59,11 @@ bash extract_frames.sh videos/val frames_6fps/validation -vf fps=6 %05d.jpg
 bash extract_frames.sh videos/test frames_6fps/test -vf fps=6 %05d.jpg
 ```
 
+##Pretrained model preparation
+We upload two files in this[link](https://pan.baidu.com/s/15Grt6eBEfJEBQV1FaQutUg)(key:cjsk)
+Put SLOW_8x8_R50.pyth into ～/.cache/toch/hub/checkpoints/
+Unzip facebookresearch_pytorchvideo_master.zip into ～/.cache/toch/hub/
+
 # Train and test
 ```
 cd ${basictad_root}
