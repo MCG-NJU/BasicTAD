@@ -60,7 +60,7 @@ bash extract_frames.sh videos/test frames_6fps/test -vf fps=6 %05d.jpg
 ```
 
 3: Pretrained model preparation
-We upload two files in this[link](https://pan.baidu.com/s/15Grt6eBEfJEBQV1FaQutUg)(key:cjsk)
+We upload two files in this [link](https://pan.baidu.com/s/15Grt6eBEfJEBQV1FaQutUg)(key:cjsk) as pretained backbone SlowOnly. 
 Put SLOW_8x8_R50.pyth into ～/.cache/toch/hub/checkpoints/
 Unzip facebookresearch_pytorchvideo_master.zip into ～/.cache/toch/hub/
 
