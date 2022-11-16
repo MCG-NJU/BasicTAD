@@ -1,5 +1,7 @@
 # BasicTAD
 
+[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/basictad-an-astounding-rgb-only-baseline-for/temporal-action-localization-on-thumos14)](https://paperswithcode.com/sota/temporal-action-localization-on-thumos14?p=basictad-an-astounding-rgb-only-baseline-for)
+
 Our paper is available in [BasicTAD](https://arxiv.org/abs/2205.02717) 
 
 # News
