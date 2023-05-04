@@ -21,7 +21,6 @@ class SingleStageDetector(BaseDetector):
         self.init_weights()
 
     def init_weights(self):
-        self.backbone.init_weights()
         if self.neck:
             if isinstance(self.neck, nn.Sequential):
                 for m in self.neck:

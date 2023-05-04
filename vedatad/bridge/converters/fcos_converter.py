@@ -421,7 +421,7 @@ class FcosConverter(BaseConverter):
             labels = valid_mask.nonzero(as_tuple=False)[:, 1]
             keep = scores.argsort(descending=True)
             results = []
-            max_num = 200
+            max_num = self.max_proposal
 
             while keep.numel() > 0:
                 segment, score, label, keep = _nmw(segments, scores, labels, keep)
@@ -513,14 +513,9 @@ class FcosConverter(BaseConverter):
 
         Example:
         """
-        load_time, pre_time, net_time, post_time, tot_time = 0, 0, 0, 0, 0
-        start_time = time.time()
-
         video_blob = feats
         meta_list = video_metas
         torch.cuda.synchronize()
-        pre_process_time = time.time()
-        pre_time += pre_process_time - start_time
 
         # output cls scores and offsets
         # map the obtained windows to original video length
@@ -540,17 +535,7 @@ class FcosConverter(BaseConverter):
             else:
                 results_list = self.post_process(dets, meta_list,iou_thr)
         torch.cuda.synchronize()
-        post_process_time = time.time()
-        post_time += post_process_time - forward_time
-
-        end_time = time.time()
-        tot_time += end_time - start_time
 
         return {
             'results': results_list,
-            'tot': tot_time,
-            'load': load_time,
-            'pre': pre_time,
-            'net': net_time,
-            'post': post_time,
         }

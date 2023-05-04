@@ -6,5 +6,4 @@ from .train_engine_AF import TrainEngine_AF
 from .val_engine_AF import ValEngine_AF
 from .infer_engine_AF import InferEngine_AF
 
-
 __all__ = ['InferEngine_AF','ValEngine_AF','TrainEngine_AF','ValEngine','InferEngine','TrainEngine','build_engine']

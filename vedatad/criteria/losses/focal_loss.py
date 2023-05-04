@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from vedacore.misc import registry
 from vedacore.ops import sigmoid_focal_loss as _sigmoid_focal_loss
 from .utils import weight_reduce_loss
-
+import torch
 
 def py_sigmoid_focal_loss(pred,
                           target,
@@ -91,10 +91,12 @@ class FocalLoss(nn.Module):
 
     def __init__(self,
                  use_sigmoid=True,
+                 change_background=False,
                  gamma=2.0,
                  alpha=0.25,
                  reduction='mean',
-                 loss_weight=1.0):
+                 loss_weight=1.0,
+                 num_classes=20):
         """`Focal Loss <https://arxiv.org/abs/1708.02002>`_
         Args:
             use_sigmoid (bool, optional): Whether to the prediction is
@@ -115,6 +117,8 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
         self.reduction = reduction
         self.loss_weight = loss_weight
+        self.num_classes = num_classes
+        self.change_background = change_background
 
     def forward(self,
                 pred,
@@ -137,6 +141,14 @@ class FocalLoss(nn.Module):
         Returns:
             torch.Tensor: The calculated loss
         """
+        if self.use_sigmoid and self.change_background:
+            pos=torch.nonzero(target!=-1)
+            target=target[pos].squeeze(1) 
+            pred=pred[pos,:].squeeze(1) 
+
+            target[target==0]=self.num_classes+1
+            target=target-1
+
         assert reduction_override in (None, 'none', 'mean', 'sum')
         reduction = (
             reduction_override if reduction_override else self.reduction)

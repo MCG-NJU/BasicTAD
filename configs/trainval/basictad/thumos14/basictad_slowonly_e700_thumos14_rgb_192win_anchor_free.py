@@ -1,5 +1,5 @@
 # 1. data
-dataset_type = 'Thumos14Dataset_fcos'
+dataset_type = 'Thumos14Dataset_additional_background'
 data_root = './data/thumos14/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
@@ -77,9 +77,9 @@ octave_base_scale = 2
 num_anchors = scales_per_octave
 
 model = dict(
-    typename='SingleStageDetector_slowonly_fcos',
+    typename='SingleStageDetector',
     backbone=dict(
-        typename='SlowFast_192win',
+        typename='SlowOnly',
         kernel_size=(2,1,1),
         stride=(2,1,1)
     ),

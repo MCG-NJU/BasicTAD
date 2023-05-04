@@ -1,11 +1,11 @@
 # 1. data
-dataset_type = 'Thumos14Dataset_fcos'
+dataset_type = 'Thumos14Dataset_additional_background'
 data_root = './data/thumos14/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 num_frames=96
-img_shape = (128,128)
-img_shape_test = (112,112)
+img_shape = (112,112)
+img_shape_test = (128,128)
 overlap_ratio = 0.25
 
 data = dict(
@@ -70,17 +70,17 @@ data = dict(
         ]))
 
 # 2. model
-num_classes = 21
+num_classes = 20
 strides = [1,2,4,8,16]
-use_sigmoid = False
+use_sigmoid = True
 scales_per_octave = 5
 octave_base_scale = 2
 num_anchors = scales_per_octave
 
 model = dict(
-    typename='SingleStageDetector_slowonly_fcos',
+    typename='SingleStageDetector',
     backbone=dict(
-        typename='SlowFast_96win',
+        typename='SlowOnly',
     ),
     neck=[
         dict(
@@ -95,25 +95,22 @@ model = dict(
             )
     ],
     head=dict(
-        typename='FcosHead',
-        heads={'act_cls':num_classes, 'offset_reg': 2},
+        typename='FcosHead_sigmoid',
+        num_classes=num_classes,
         in_channels=2048,
+        stacked_convs=4,
+        dcn_on_last_conv=True,
+        feat_channels=2048,
+        use_sigmoid=use_sigmoid,
         num_ins=5,
-        num_blocks=3,
-        kernel_size=3,
-        stride=1,
-        padding=1,
+        conv_cfg=dict(typename='Conv1d'),
+        norm_cfg=dict(typename='GN',num_groups=32, requires_grad=True),
     ))
 
 # 3. engines
 meshgrid = dict(
-    typename='SegmentAnchorMeshGrid',
-    strides=strides,
-    base_anchor=dict(
-        typename='SegmentBaseAnchor',
-        base_sizes=strides,
-        octave_base_scale=octave_base_scale,
-        scales_per_octave=scales_per_octave))
+    typename='PointAnchorMeshGrid',
+    strides=strides)
 
 segment_coder = dict(
     typename='DeltaSegmentCoder',
@@ -124,40 +121,42 @@ train_engine = dict(
     typename='TrainEngine_AF',
     model=model,
     criterion=dict(
-        typename='FcosActFPNContextRegLossCriterion_batches_diou',
-        act_loss_type='focal',
-        iou_loss_type='iou',
-        act_cls=num_classes,
-        batch_size=1,
-        down_ratio_list=strides,
-        num_stacks=5,
+        typename='FcosCriterion',
         reg_range_list=[[-1., 5.], [2.5, 5.],[2.5, 5.],[2.5, 5.],[2.5,'INF']],
-        num_max_acts=60,
-        is_thumos=True
+        loss_cls=dict(
+            typename='FocalLoss',
+            use_sigmoid=use_sigmoid,
+            change_background=True,
+            gamma=2.0,
+            alpha=0.25,
+            loss_weight=1.0,
+            num_classes=num_classes,
+            ),
+        loss_segment=dict(typename='DIoULoss', loss_weight=1.0),
+        num_classes=num_classes,
+        strides = strides,
+        is_thumos = True,
         ),
     optimizer=dict(typename='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001))
 
 # 3.2 val engine
 val_engine = dict(
-    typename='ValEngine_AF',
+    typename='ValEngine',
     model=model,
     meshgrid=meshgrid,
     converter=dict(
-        typename='FcosConverter',
-        model=model,
-        act_loss_type='focal',
+        typename='PointAnchorConverter',
         down_ratio_list=strides,
-        act_score_thresh=0.005, 
-        norm_offset_reg=True,
-        max_proposal=200,
-        is_Anet=False,
-    ),
+        num_classes=num_classes,
+        segment_coder=segment_coder,
+        nms_pre=1000,
+        use_sigmoid=use_sigmoid),
     num_classes=num_classes,
-    iou_thr=0.6,
-    use_sigmoid=use_sigmoid,
-    is_Anet=False,
-    nmw=True
-    )
+    test_cfg=dict(
+        score_thr=0.005,
+        nms=dict(typename='nmw-af', iou_thr=0.4),
+        max_per_video=1200), #1200
+    use_sigmoid=use_sigmoid)
 
 # 4. hooks
 hooks = [

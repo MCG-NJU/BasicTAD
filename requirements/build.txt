@@ -6,3 +6,10 @@ matplotlib
 psutil
 tensorboard
 fvcore
+av
+transformers
+timm
+einops
+easydict
+tensorboardX
+ninja

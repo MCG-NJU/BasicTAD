@@ -44,9 +44,6 @@ class Thumos14Dataset(CustomDataset):
             data_info['frames'] = num_imgs
             data_info['fps'] = int(round(num_imgs / video_info['duration']))
             img = imread(imgfiles[0])
-
-            size = (128, 128)  
-            img=cv2.resize(img, size, interpolation=cv2.INTER_AREA) 
             data_info['height'], data_info['width'] = img.shape[:2]
 
             segments = []

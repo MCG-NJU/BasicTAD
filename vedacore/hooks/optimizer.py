@@ -21,10 +21,12 @@ class OptimizerHook(BaseHook):
         results = looper.cur_train_results
         optimizer.zero_grad()
         results['loss'].backward()
+
         if self.grad_clip is not None:
             model = looper.train_engine.model
             # grad_norm = self.clip_grads(model.parameters())
             self.clip_grads(model.parameters())
+
         optimizer.step()
 
     @property

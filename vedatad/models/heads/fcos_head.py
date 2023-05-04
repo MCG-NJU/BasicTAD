@@ -211,6 +211,9 @@ class FcosHead(nn.Module):
         for p in self.scales.parameters():
             p.requires_grad = False
         '''
+    def init_weights(self):
+        """Initialize weights of the head."""
+        pass
 
 
     def forward(self, feats):

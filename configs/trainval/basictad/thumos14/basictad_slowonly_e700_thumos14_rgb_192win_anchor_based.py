@@ -77,9 +77,9 @@ octave_base_scale = 2
 num_anchors = scales_per_octave
 
 model = dict(
-    typename='SingleStageDetector_slowonly',
+    typename='SingleStageDetector',
     backbone=dict(
-        typename='SlowFast_192win',
+        typename='SlowOnly',
         kernel_size=(2,1,1),
         stride=(2,1,1)
     ),
@@ -143,6 +143,7 @@ train_engine = dict(
         loss_cls=dict(
             typename='FocalLoss',
             use_sigmoid=use_sigmoid,
+            change_background=False,
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),

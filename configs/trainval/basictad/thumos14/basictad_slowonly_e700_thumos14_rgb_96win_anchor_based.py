@@ -4,8 +4,8 @@ data_root = './data/thumos14/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 num_frames=96
-img_shape = (128,128)
-img_shape_test = (112,112)
+img_shape = (112,112)
+img_shape_test = (128,128)
 overlap_ratio = 0.25
 
 data = dict(
@@ -78,9 +78,9 @@ octave_base_scale = 2
 num_anchors = scales_per_octave
 
 model = dict(
-    typename='SingleStageDetector_slowonly',
+    typename='SingleStageDetector',
     backbone=dict(
-        typename='SlowFast_96win',
+        typename='SlowOnly',
     ),
     neck=[
         dict(
@@ -142,6 +142,7 @@ train_engine = dict(
         loss_cls=dict(
             typename='FocalLoss',
             use_sigmoid=use_sigmoid,
+            change_background=False,
             gamma=2.0,
             alpha=0.25,
             loss_weight=1.0),

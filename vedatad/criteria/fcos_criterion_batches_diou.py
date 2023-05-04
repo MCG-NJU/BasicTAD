@@ -19,108 +19,6 @@ def affine_transform(pt, t):
     new_pt = np.dot(t, new_pt)     
     return new_pt[:2]
 
-def batch_bbox_overlaps(bboxes, gts):
-    """Calculate overlap between two sets of bboxes
-
-    Args:
-        bboxes (Tensor): shape (batchsize, m, 2) in <start, end> format or empty.
-        gts (Tensor): shape (batchsize, n, 3) in <start, end> format or empty.
-
-    Returns:
-        ious(Tensor): shape (batchsize, m, n)
-    """
-    batchsize = bboxes.shape[0] 
-    M = bboxes.shape[1] 
-    N = gts.shape[1] 
-
-    gt_twins = gts[:, :, :2].contiguous() 
-
-    gt_twins_x = (gt_twins[:, :, 1] - gt_twins[:, :, 0] + 1) 
-    gt_twins_len = gt_twins_x.view(batchsize, 1, N) 
-
-    bboxes_x = (bboxes[:, :, 1] - bboxes[:, :, 0] + 1)  
-    bboxes_len = bboxes_x.view(batchsize, M, 1) 
-
-    gt_len_zero = (gt_twins_x == 1)
-    bboxes_len_zero = (bboxes_x == 1)
-
-    twins = bboxes.view(batchsize, M, 1, 2).expand(batchsize, M, N, 2) 
-    query_twins = gt_twins.view(batchsize, 1, N, 2).expand(batchsize, M, N, 2) 
-
-    ilen = (torch.min(twins[:, :, :, 1], query_twins[:, :, :, 1]) -
-            torch.max(twins[:, :, :, 0], query_twins[:, :, :, 0]) + 1)
-    ilen[ilen < 0] = 0  # batchsize*M*N
-
-    ua = bboxes_len + gt_twins_len - ilen
-    overlaps = ilen / ua
-
-    # mask the overlap
-    overlaps.masked_fill_(gt_len_zero.view(batchsize, 1, N).expand(batchsize, M, N), -1)
-    overlaps.masked_fill_(bboxes_len_zero.view(batchsize, M, 1).expand(batchsize, M, N), -1)
-
-    return overlaps
-
-def offsets2bboxes(offsets, down_ratio):
-    """ map offset to bbox in the original video
-
-    Args:
-        offsets (Tensor): shape (N, T, 2)
-
-    return:
-        bboxes (Tensor): shape (N, T, 2)
-    """
-    output_length = offsets.shape[1] 
-    tmp_locations = torch.arange(0, output_length, dtype=offsets.dtype,
-                                 device=offsets.device) + 0.5
-    tmp_locations = tmp_locations.repeat(offsets.shape[0], 1)  # N*T
-    det_bboxes = torch.zeros_like(offsets)  # N*T*2
-    det_bboxes[:, :, 0] = tmp_locations - offsets[:, :, 0]
-    det_bboxes[:, :, 1] = tmp_locations + offsets[:, :, 1]
-
-    det_bboxes = det_bboxes * down_ratio
-    det_bboxes = det_bboxes.clamp_(min=0.0, max=output_length*down_ratio)  # N*T*2
-
-    return det_bboxes
-
-def batch_bbox_transform(roi_bboxes, gt_bboxes):
-    """Calculate bounding box regression targets for each roi box
-
-    Args:
-        bboxes (Tensor): shape (batchsize, m, 2) in <start, end>
-        gt_bboxes (Tensor): shape (batchsize, m, 2) in <start, end>
-
-    Returns:
-        targets (Tensor): shape (batchsize, m, 2)
-    """
-
-    roi_lens = roi_bboxes[:, :, 1] - roi_bboxes[:, :, 0] + 1.0
-    roi_ctr_x = roi_bboxes[:, :, 0] + 0.5 * roi_lens
-
-    gt_lens = gt_bboxes[:, :, 1] - gt_bboxes[:, :, 0] + 1.0
-    gt_ctr_x = gt_bboxes[:, :, 0] + 0.5 * gt_lens
-
-    targets_dx = (gt_ctr_x - roi_ctr_x) / roi_lens
-    targets_dl = torch.log(gt_lens / roi_lens)
-
-    targets = torch.stack((targets_dx, targets_dl), 2)
-
-    return targets
-
-def _smooth_l1_loss(bbox_pred, bbox_targets, sigma=1.0, dim=1):
-
-    if torch.numel(bbox_pred)==0:
-        return 0
-
-    sigma_2 = sigma ** 2
-    box_diff = bbox_pred - bbox_targets  
-    abs_box_diff = torch.abs(box_diff)
-    smoothL1_sign = (abs_box_diff < 1. / sigma_2).detach().float()
-    loss_box = torch.pow(box_diff, 2) * (sigma_2 / 2.) * smoothL1_sign \
-               + (abs_box_diff - (0.5 / sigma_2)) * (1. - smoothL1_sign)
-    loss_box = loss_box.sum(dim)
-    loss_box = loss_box.mean()
-    return loss_box
-
 def _gather_feat(feat, ind, mask=None):
     dim = feat.size(2)
     ind = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
@@ -670,6 +568,10 @@ class FcosActFPNContextRegLossCriterion_batches_diou(torch.nn.Module):
         self.reg_range_list=reg_range_list
         self.num_max_acts=num_max_acts
         self.is_thumos=is_thumos
+    
+    def init_weights(self):
+        """Initialize weights of the head."""
+        pass
     
     @staticmethod
     def _parse_losses(losses):
