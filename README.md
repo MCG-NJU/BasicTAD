@@ -5,7 +5,7 @@
 Our paper is available in [BasicTAD](https://arxiv.org/abs/2205.02717) 
 
 # News
-[2023.5.4] New code is updated in "new" branch. <br>
+[2023.5.4] New code is updated. <br>
 [2023.4.13] Our BasicTAD has been published in CVIU. New code will be updated soon. <br>
 [2022.11.14] We upload pretrained backbone for users to train their own models. <br>
 [2022.11.2] Some issues have been fixed. More complete code is on the way. <br>
